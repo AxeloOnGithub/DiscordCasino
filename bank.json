@@ -1,0 +1,69 @@
+{
+ "1": {
+  "name": "Casino",
+  "balance": 16109.0,
+  "roulette": {
+   "won": 0,
+   "lost": 0
+  },
+  "blackjack": {
+   "won": 35,
+   "lost": 14
+  },
+  "coinflip": {
+   "won": 6,
+   "lost": 8
+  }
+ },
+ "465783447567466496": {
+  "name": "Axelo",
+  "balance": 10850840.0,
+  "roulette": {
+   "won": 0,
+   "lost": 0
+  },
+  "blackjack": {
+   "won": 13,
+   "lost": 34
+  },
+  "coinflip": {
+   "won": 6,
+   "lost": 6
+  },
+  "beg": 0
+ },
+ "331677081245188096": {
+  "name": "Blom",
+  "balance": 999901,
+  "roulette": {
+   "won": 0,
+   "lost": 0
+  },
+  "blackjack": {
+   "won": 1,
+   "lost": 1
+  },
+  "coinflip": {
+   "won": 0,
+   "lost": 0
+  },
+  "beg": 0
+ },
+ "485104777655746560": {
+  "name": "Bendixxsonn",
+  "balance": 200020000,
+  "roulette": {
+   "won": 0,
+   "lost": 0
+  },
+  "blackjack": {
+   "won": 0,
+   "lost": 0
+  },
+  "coinflip": {
+   "won": 2,
+   "lost": 0
+  },
+  "beg": 0
+ }
+}
