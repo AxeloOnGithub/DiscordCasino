@@ -9,13 +9,14 @@ from dotenv import load_dotenv
 import os
 from PIL import Image, ImageDraw, ImageFont
 from pymongo import MongoClient
+from datetime import date, datetime
 
 #!enviroment variables
 load_dotenv("token.env")
 mongodb_password = os.getenv("MONGODB_PASSWORD")
+token = os.getenv("DISCORD_TOKEN")
 
 cluster = MongoClient(f"mongodb+srv://DiscordCasino:{mongodb_password}@discordcasino.xoeonsi.mongodb.net/?retryWrites=true&w=majority&appName=DiscordCasino")
-
 
 #!BOT SETTINGS
 intents = discord.Intents.default()
@@ -138,7 +139,7 @@ class CardBackground:
         # Save the result
         self.background_img.save(output_image_path)
 
-class end():
+class end:
 
     async def PlayerBust(interaction, bet, ctx):
         await interaction.message.edit(embed=discord.Embed(title="Player Bust! Dealer wins", description=f"You went over 21 and lost your bet of **${bet}**.", color=colors.red), view=None)
@@ -174,18 +175,18 @@ class end():
         money_handler(ctx, bet, False)
         stats_handler(ctx, "blackjack", False)
 
-class colors():
+class colors:
 
     blue = 0x006eff
     red = 0xff0000
     green = 0x00ff00
 
-class images():
+class images:
 
     heads_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihaOc-4xb5mgyK0qN7hwtf2HMkflN5YQfnQh6ZSINLokPqTMeX9rs566s3SjP1WOb1OwHLsp1GDDaNdG440RNCgENqD8=w1080-h1785-v0"
     tails_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihYqf6Z26jCCrZq57i_mBBPGNFkrSi_urTQ1k13yMj3GdZnkIKHlwdBJVr0pA2juGpcBGSOogtWffOPeLf7322SzF2N2hw=w1080-h1785-v0"
     CF_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihb05RWJrUmlbAF5XzUiZSPt6S8dY3qDd5asXZyDaRF2A_iadPa3HQBMnZEtrjIUUB3ychqfefhPf6dW1aDR-fS9bW2z=w1080-h1785-rw-v1"
-    BJ_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihbVYNTA85Qj4OWM6mgLJKDWK7_91WV0aJ3M9oriHbNCAXIEKshznOtDsTUfbEL3PW1plZWqhkOuY1p7RMRJoo_R3QjzUw=w1080-h1785-rw-v1"
+    BJ_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihbVYNTA85Qj4OWM6mgLJKDWK7_91WV0aJ3M9oriHbNCAXIEKshznOtDsTUfbEL3PW1plZWqhkOuY1p7RMRJoo_R3QjzUw=w1080-h1785-rw-v1"       
 
 #!COINFLIP FUNCTIONS
 def GetData(id=None, name=None, field=None):
@@ -611,6 +612,33 @@ async def slash_command(ctx: SlashContext, bet: int):
 
     await ctx.response.send_message(embed=discord.Embed(title="**Blackjack**", description=f"Aim to beat the dealer's hand without going over 21. If successful, you win your bet. If not, you lose your bet.\n* Game Rules:\n * Aces are 1 or 11, number cards are face value, and face cards are worth 10\n * Blackjack pays 3:2\n * Insurance Pays 2:1\n * Dealer must stand on 17 and must draw to 16", color=colors.blue).set_image(url=BJ_logo), view=startview)
     
+@bot.tree.command(name="transfer",description="transfer money from your account to another users.")
+@app_commands.describe(user = "Who do you want to transer money to?", amount = "How much do you want to transfer?")
+async def slash_command(ctx: SlashContext, user: discord.User, amount: int):
+
+    if amount > GetData(id=ctx.user.id, field="balance"):
+        await ctx.response.send_message(embed=discord.Embed(title=f"**You dont have enough money to make this transaction**", color=colors.red))
+    else:
+        UpdateData(-amount, id=ctx.user.id, field="balance") #remove amount from command user
+        UpdateData(amount, id=user.id, field="balance") #add amount to specified user
+        await ctx.response.send_message(embed=discord.Embed(title=f"**Transaction completed**",description=f"successfully transfered **${amount}** to **{user}**", color=colors.green).set_footer(text=f"performed by {ctx.user.display_name} on {str(date.today())}", icon_url=ctx.user.avatar).set_thumbnail(url=user.avatar))
+
+@bot.tree.command(name="beg",description="beg strangers for money.")
+async def slash_command(ctx: SlashContext):
+
+    last_time = GetData(id=ctx.user.id, field="beg")
+    current_time = datetime.now()
+    time_difference = current_time - last_time
+
+    if time_difference.total_seconds() > 24 * 3600:
+        amount = random.randint(1,100)
+        UpdateData(amount, id=ctx.user.id, field="balance")
+        UpdateData(current_time, id=ctx.user.id, field="beg", operator="$set")
+        await ctx.response.send_message(embed=discord.Embed(title=f"**Nice! A stranger gave you ${amount}**", color=colors.green))
+
+    else:
+        await ctx.response.send_message(embed=discord.Embed(title=f"**You can only beg strangers for money once a day!**", color=colors.red))
+
 #!BOT EVENTS
 @bot.event
 async def on_ready():
@@ -644,14 +672,4 @@ async def on_member_join(member):
         
         InsertData(stats)
 
-# Get the token from environment variables
-token = os.getenv("DISCORD_TOKEN")
-print("Token:", token)  # Debug print
-
-# If token is None, handle the error or check why the environment variable is not loaded properly
-if token is None:
-    print("ERROR: Discord token is not loaded properly!")
-    # Handle the error accordingly, such as exiting the script or providing a default token value
-else:
-    # Proceed with running your bot
-    bot.run(token)
+bot.run(token)
