@@ -1,33 +1,33 @@
 {
  "1": {
   "name": "Casino",
-  "balance": 16109.0,
+  "balance": 534119.0,
   "roulette": {
    "won": 0,
    "lost": 0
   },
   "blackjack": {
-   "won": 35,
-   "lost": 14
+   "won": 49,
+   "lost": 25
   },
   "coinflip": {
    "won": 6,
-   "lost": 8
+   "lost": 9
   }
  },
  "465783447567466496": {
   "name": "Axelo",
-  "balance": 10850840.0,
+  "balance": 10332830.0,
   "roulette": {
    "won": 0,
    "lost": 0
   },
   "blackjack": {
-   "won": 13,
-   "lost": 34
+   "won": 24,
+   "lost": 48
   },
   "coinflip": {
-   "won": 6,
+   "won": 7,
    "lost": 6
   },
   "beg": 0

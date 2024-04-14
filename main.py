@@ -4,12 +4,18 @@ from discord.ext import commands
 from interactions import slash_command, SlashContext
 from discord.ui import Button, View
 from discord import *
-import math
 import random
 from dotenv import load_dotenv
 import os
 from PIL import Image, ImageDraw, ImageFont
-import asyncio
+from pymongo import MongoClient
+
+#!enviroment variables
+load_dotenv("token.env")
+mongodb_password = os.getenv("MONGODB_PASSWORD")
+
+cluster = MongoClient(f"mongodb+srv://DiscordCasino:{mongodb_password}@discordcasino.xoeonsi.mongodb.net/?retryWrites=true&w=majority&appName=DiscordCasino")
+
 
 #!BOT SETTINGS
 intents = discord.Intents.default()
@@ -135,43 +141,77 @@ class CardBackground:
 class end():
 
     async def PlayerBust(interaction, bet, ctx):
-        await interaction.message.edit(embed=discord.Embed(title="Player Bust! Dealer wins", description=f"You went over 21 and lost your bet of **${bet}**.", color=0xff0000), view=None)
+        await interaction.message.edit(embed=discord.Embed(title="Player Bust! Dealer wins", description=f"You went over 21 and lost your bet of **${bet}**.", color=colors.red), view=None)
         money_handler(ctx, bet, False)
         stats_handler(ctx, "blackjack", False)
 
     async def DealerBust(interaction, bet, ctx):
-        await interaction.message.edit(embed=discord.Embed(title="Dealer Bust! Player wins", description=f"The Dealer went over 21 and your initial bet of ${bet} is now **${bet*2}**.", color=0x00ff00), view=None)
+        await interaction.message.edit(embed=discord.Embed(title="Dealer Bust! Player wins", description=f"The Dealer went over 21 and your initial bet of ${bet} is now **${bet*2}**.", color=colors.green), view=None)
         money_handler(ctx, bet, True)
         stats_handler(ctx, "blackjack", True)
 
     async def Push(interaction, bet, ctx):
-        await interaction.message.edit(embed=discord.Embed(title="Push!", description=f"You and the Dealers cards were of same value", color=0x006eff), view=None)
+        await interaction.message.edit(embed=discord.Embed(title="Push!", description=f"You and the Dealers cards were of same value", color=colors.blue), view=None)
         stats_handler(ctx, "blackjack", True)
 
     async def PlayerWin(interaction, bet, ctx):
-        await interaction.message.edit(embed=discord.Embed(title="Player Win!", description=f"Your cards were of higher value than the Dealer and your initial bet of ${bet} is now **${bet*2}**.", color=0x00ff00), view=None)
+        await interaction.message.edit(embed=discord.Embed(title="Player Win!", description=f"Your cards were of higher value than the Dealer and your initial bet of ${bet} is now **${bet*2}**.", color=colors.green), view=None)
         money_handler(ctx, bet, True)
         stats_handler(ctx, "blackjack", True)
 
     async def DealerWin(interaction, bet, ctx):
-        await interaction.message.edit(embed=discord.Embed(title="Dealer Win!", description=f"The Dealers cards were of higher value than yours and you lost bet of **${bet}**.", color=0xff0000), view=None)
+        await interaction.message.edit(embed=discord.Embed(title="Dealer Win!", description=f"The Dealers cards were of higher value than yours and you lost bet of **${bet}**.", color=colors.red), view=None)
         money_handler(ctx, bet, False)
         stats_handler(ctx, "blackjack", False)
 
     async def PlayerBJ(interaction, bet, ctx):
-        await interaction.channel.send(embed=discord.Embed(title="Player Blackjack!", description=f"You got a Blackjack and your initial bet of ${bet} is now **${bet*2.5}**.", color=0x00ff00), view=None)
+        await interaction.channel.send(embed=discord.Embed(title="Player Blackjack!", description=f"You got a Blackjack and your initial bet of ${bet} is now **${bet*2.5}**.", color=colors.green), view=None)
         money_handler(ctx, bet*1.5, True)
         stats_handler(ctx, "blackjack", True)
 
     async def DealerBJ(interaction, bet, ctx):
-        await interaction.message.edit(embed=discord.Embed(title="Dealer Blackjack!", description=f"The Dealer got a Blackjack and you lost bet of **${bet}**.", color=0xff0000), view=None)
+        await interaction.message.edit(embed=discord.Embed(title="Dealer Blackjack!", description=f"The Dealer got a Blackjack and you lost bet of **${bet}**.", color=colors.red), view=None)
         money_handler(ctx, bet, False)
         stats_handler(ctx, "blackjack", False)
 
-#!Variables
-background = CardBackground("images/Unavngivet.jpg")
+class colors():
+
+    blue = 0x006eff
+    red = 0xff0000
+    green = 0x00ff00
+
+class images():
+
+    heads_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihaOc-4xb5mgyK0qN7hwtf2HMkflN5YQfnQh6ZSINLokPqTMeX9rs566s3SjP1WOb1OwHLsp1GDDaNdG440RNCgENqD8=w1080-h1785-v0"
+    tails_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihYqf6Z26jCCrZq57i_mBBPGNFkrSi_urTQ1k13yMj3GdZnkIKHlwdBJVr0pA2juGpcBGSOogtWffOPeLf7322SzF2N2hw=w1080-h1785-v0"
+    CF_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihb05RWJrUmlbAF5XzUiZSPt6S8dY3qDd5asXZyDaRF2A_iadPa3HQBMnZEtrjIUUB3ychqfefhPf6dW1aDR-fS9bW2z=w1080-h1785-rw-v1"
+    BJ_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihbVYNTA85Qj4OWM6mgLJKDWK7_91WV0aJ3M9oriHbNCAXIEKshznOtDsTUfbEL3PW1plZWqhkOuY1p7RMRJoo_R3QjzUw=w1080-h1785-rw-v1"
 
 #!COINFLIP FUNCTIONS
+def GetData(id=None, name=None, field=None):
+    db = cluster["Casino"]
+    collection = db["Users"]
+
+    if id != None:
+        return collection.find_one({"_id": id}).get(field)
+    elif name != None:
+        return collection.find_one({"name": name}).get(field)
+    
+def UpdateData(data, id=None, name=None, field=None, operator="$inc"):
+    db = cluster["Casino"]
+    collection = db["Users"]
+
+    if id != None:
+        collection.update_one({"_id": id}, {operator: {field: data}})
+    elif name != None:
+        collection.update_one({"name": name}, {operator: {field: data}})
+
+def InsertData(data):
+    db = cluster["Casino"]
+    collection = db["Users"]
+
+    collection.insert_one(data)
+
 def can_afford(ctx, bet):
     with open("bank.json", "r") as info:
         data = json.load(info)
@@ -183,54 +223,42 @@ def can_afford(ctx, bet):
     
 def money_handler(ctx, bet, add):
 
-    with open("bank.json", "r") as info:
-        data = json.load(info)
-
     if add:
-        data[str(ctx.user.id)]["balance"] += bet
-        data["1"]["balance"] -= bet
+        UpdateData(bet, id=ctx.user.id, field="balance", operator="$inc")
+        UpdateData(-bet, name="Casino", field="balance", operator="$inc")
 
     if not add:
-        data[str(ctx.user.id)]["balance"] -= bet
-        data["1"]["balance"] += bet
-
-    with open("bank.json", "w") as f:
-            json.dump(data, f, indent=1)
+        UpdateData(-bet, id=ctx.user.id, field="balance", operator="$inc")
+        UpdateData(bet, name="Casino", field="balance", operator="$inc")
 
 def stats_handler(ctx, game, won):
 
-    with open("bank.json", "r") as info:
-        data = json.load(info)
-
     if won:
-        data[str(ctx.user.id)][game]["won"] += 1
-        data["1"][game]["lost"] += 1
-    if not won:
-        data[str(ctx.user.id)][game]["lost"] += 1
-        data["1"][game]["won"] += 1
+        UpdateData(1, id=ctx.user.id, field=f"{game}.won", operator="$inc")
+        UpdateData(1, name="Casino", field=f"{game}.lost", operator="$inc")
 
-    with open("bank.json", "w") as f:
-            json.dump(data, f, indent=1)
+    if not won:
+        UpdateData(1, id=ctx.user.id, field=f"{game}.lost", operator="$inc")
+        UpdateData(1, name="Casino", field=f"{game}.won", operator="$inc")
     
 def stats_collecter(ctx, game):
 
-    with open("bank.json", "r") as info:
-        data = json.load(info)
+    PlayerData = GetData(id=ctx.user.id, field=game)
+    CasinoData = GetData(name="Casino", field=game)
 
-    stats = [data[str(ctx.user.id)][game]["won"], data[str(ctx.user.id)][game]["lost"], data["1"][game]["won"], data["1"][game]["lost"]]
+    stats = [PlayerData.get("won"), PlayerData.get("lost"), CasinoData.get("won"), CasinoData.get("lost")]
 
-    return(stats)
+    return stats
 
 #!SLASH COMMANDS
 @bot.tree.command(name="balance",description="Check your account balance")
 async def slash_command(interaction:discord.Interaction):
 
-    with open("bank.json", "r") as info:
-        data = json.load(info)
+    data = GetData(id=interaction.user.id, field="balance")
 
-    balance_embed=discord.Embed(title=f"**Account balance of {interaction.user.display_name}**", color=0x006eff)
+    balance_embed=discord.Embed(title=f"**Account balance of {interaction.user.display_name}**", color=colors.blue)
     balance_embed.set_thumbnail(url=interaction.user.avatar)
-    balance_embed.add_field(name="Balance:", value=f"${data[str(interaction.user.id)]['balance']}", inline=True)
+    balance_embed.add_field(name="Balance:", value=f"${data}", inline=True)
 
     await interaction.response.send_message(embed=balance_embed)
 
@@ -238,12 +266,8 @@ async def slash_command(interaction:discord.Interaction):
 @app_commands.describe(bet = "How much do you want to bet?")
 async def slash_command(ctx: SlashContext, bet: int):
 
-    heads_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihaOc-4xb5mgyK0qN7hwtf2HMkflN5YQfnQh6ZSINLokPqTMeX9rs566s3SjP1WOb1OwHLsp1GDDaNdG440RNCgENqD8=w1080-h1785-v0"
-    tails_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihYqf6Z26jCCrZq57i_mBBPGNFkrSi_urTQ1k13yMj3GdZnkIKHlwdBJVr0pA2juGpcBGSOogtWffOPeLf7322SzF2N2hw=w1080-h1785-v0"
-    CF_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihb05RWJrUmlbAF5XzUiZSPt6S8dY3qDd5asXZyDaRF2A_iadPa3HQBMnZEtrjIUUB3ychqfefhPf6dW1aDR-fS9bW2z=w1080-h1785-rw-v1"
-
     if not can_afford(ctx, bet):
-        await ctx.response.send_message(embed=discord.Embed(title="**Coinflip**", description=f"**You cant afford this bet**", color=0xff0000).set_image(url=CF_logo))
+        await ctx.response.send_message(embed=discord.Embed(title="**Coinflip**", description=f"**You cant afford this bet**", color=colors.red).set_image(url=images.CF_logo))
         return
 
     money_handler(ctx, bet, False)
@@ -258,36 +282,35 @@ async def slash_command(ctx: SlashContext, bet: int):
     async def heads_callback(interaction):
         if ctx.user.id != interaction.user.id:
             return
-        
-        choice = "heads"
+    
         result = flip()
 
         if result == 0:
-            await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"It was Heads. You won and doubled your bet.\n**+{bet}$**", color=0x00ff00).set_image(url=heads_logo), view=None)
+            await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"It was Heads. You won and doubled your bet.\n**+{bet}$**", color=colors.green).set_image(url=images.heads_logo), view=None)
             money_handler(ctx, bet, True)
             stats_handler(ctx, "coinflip", True)
         else:
-            await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"It was Tails. You Lost your bet.\n**-{bet}$**", color=0xff0000).set_image(url=tails_logo), view=None)
+            await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"It was Tails. You Lost your bet.\n**-{bet}$**", color=colors.red).set_image(url=images.tails_logo), view=None)
             stats_handler(ctx, "coinflip", False)
 
     async def tails_callback(interaction):
         if ctx.user.id != interaction.user.id:
             return
-        choice = tails
+        
         result = flip()
 
 
         if result == 1:
-            await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"It was Tails. You won and doubled your bet.\n**+{bet}$**", color=0x00ff00).set_image(url=tails_logo), view=None)
+            await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"It was Tails. You won and doubled your bet.\n**+{bet}$**", color=colors.green).set_image(url=images.tails_logo), view=None)
             money_handler(ctx, bet, True)
             stats_handler(ctx, "coinflip", True)
         else:
-            await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"It was Heads. You Lost your bet.", color=0xff0000).set_image(url=heads_logo), view=None)
+            await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"It was Heads. You Lost your bet.", color=colors.red).set_image(url=images.heads_logo), view=None)
             stats_handler(ctx, "coinflip", False)
 
     async def stats_callback(interaction):
         stats = stats_collecter(ctx, "coinflip")
-        await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"Here is the stats of all the Coinflips ever done:", color=0x006eff).add_field(name="Casino:", value=f"Wins:  **{stats[2]}**\nLoses: **{stats[3]}**", inline=True).add_field(name=f"{ctx.user.display_name}:", value=f"Wins:  **{stats[0]}**\nLoses: **{stats[1]}**", inline=True).set_image(url=CF_logo), view=None)
+        await interaction.response.edit_message(embed=discord.Embed(title="**Coinflip**", description=f"Here is the stats of all the Coinflips ever done:", color=colors.blue).add_field(name="Casino:", value=f"Wins:  **{stats[2]}**\nLoses: **{stats[3]}**", inline=True).add_field(name=f"{ctx.user.display_name}:", value=f"Wins:  **{stats[0]}**\nLoses: **{stats[1]}**", inline=True).set_image(url=images.CF_logo), view=None)
 
 
     heads.callback = heads_callback
@@ -298,7 +321,7 @@ async def slash_command(ctx: SlashContext, bet: int):
     view.add_item(heads)
     view.add_item(tails)
     view.add_item(stats)
-    await ctx.response.send_message(embed=discord.Embed(title="**Coinflip**", description=f"50/50 chance to double your money. Choose what side the coin is going to land on. If your choice is correct you double your money, if it isn't you lose your money.", color=0x006eff).set_image(url=CF_logo), view=view)
+    await ctx.response.send_message(embed=discord.Embed(title="**Coinflip**", description=f"50/50 chance to double your money. Choose what side the coin is going to land on. If your choice is correct you double your money, if it isn't you lose your money.", color=colors.blue).set_image(url=images.CF_logo), view=view)
 
 @bot.tree.command(name="blackjack",description="Blackjack: Beat the dealer's hand without going over 21")
 @app_commands.describe(bet = "How much do you want to bet?")
@@ -314,7 +337,6 @@ async def slash_command(ctx: SlashContext, bet: int):
     PlayerHand = []
     DealerHand = []
 
-    Insurance = None
 
     def DealCard(hand: list, name, insurance=False, lock=False ):
         if lock:
@@ -390,7 +412,6 @@ async def slash_command(ctx: SlashContext, bet: int):
     def ShowDealer():
         background.add_cards_to_background("images/output_image.jpg", scale_factor=2)
 
-
     def ShowCards():
         print(f"Player: {PlayerHand}, {TotalHand(PlayerHand)}\nDealer: {DealerHand[0]}, {DealerHand[0][1:]}")
 
@@ -404,7 +425,7 @@ async def slash_command(ctx: SlashContext, bet: int):
                 print("yes")
                 if TotalHand(DealerHand) == 21:
                     ShowDealer()
-                    end.DealerBJ
+                    await end.DealerBJ
                 else:
                     print("yes2")
                     await BuyInsurance(interaction, get_lose="lose")
@@ -414,7 +435,7 @@ async def slash_command(ctx: SlashContext, bet: int):
                 print("no")
                 if TotalHand(DealerHand) == 21:
                     ShowDealer()
-                    end.DealerBJ
+                    await end.DealerBJ
                 else:
                     print("no2")
                     await interaction.message.edit(attachments=[discord.File("images/output_image.jpg")], view=optionsview)
@@ -498,7 +519,7 @@ async def slash_command(ctx: SlashContext, bet: int):
     BJ_logo = "https://lh3.googleusercontent.com/u/0/drive-viewer/AKGpihbVYNTA85Qj4OWM6mgLJKDWK7_91WV0aJ3M9oriHbNCAXIEKshznOtDsTUfbEL3PW1plZWqhkOuY1p7RMRJoo_R3QjzUw=w1080-h1785-rw-v1"
 
     if not can_afford(ctx, bet):
-        await ctx.response.send_message(embed=discord.Embed(title="**BlackJack**", description=f"**You cant afford this bet**", color=0xff0000).set_image(url=BJ_logo))
+        await ctx.response.send_message(embed=discord.Embed(title="**BlackJack**", description=f"**You cant afford this bet**", color=colors.red).set_image(url=BJ_logo))
         return
     
     start_button = discord.ui.Button(label="Start Game", style=discord.ButtonStyle.red)
@@ -511,6 +532,7 @@ async def slash_command(ctx: SlashContext, bet: int):
     no_button = discord.ui.Button(label="No, i don't want insurance", style=discord.ButtonStyle.red)
     
     async def start_button_callback(interaction):
+
         if ctx.user.id != interaction.user.id:
             return
 
@@ -587,8 +609,7 @@ async def slash_command(ctx: SlashContext, bet: int):
     insuranceview.add_item(no_button)
 
 
-    await ctx.response.send_message(embed=discord.Embed(title="**Blackjack**", description=f"Aim to beat the dealer's hand without going over 21. If successful, you win your bet. If not, you lose your bet.\n* Game Rules:\n * Aces are 1 or 11, number cards are face value, and face cards are worth 10\n * Blackjack pays 3:2\n * Insurance Pays 2:1\n * Dealer must stand on 17 and must draw to 16", color=0x006eff).set_image(url=BJ_logo), view=startview)
-
+    await ctx.response.send_message(embed=discord.Embed(title="**Blackjack**", description=f"Aim to beat the dealer's hand without going over 21. If successful, you win your bet. If not, you lose your bet.\n* Game Rules:\n * Aces are 1 or 11, number cards are face value, and face cards are worth 10\n * Blackjack pays 3:2\n * Insurance Pays 2:1\n * Dealer must stand on 17 and must draw to 16", color=colors.blue).set_image(url=BJ_logo), view=startview)
     
 #!BOT EVENTS
 @bot.event
@@ -597,15 +618,13 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-    with open("bank.json", "r") as info:
-        data = json.load(info)
-
-    if str(member.id) in data:
+    try:
+        GetData(member.id) # trying to find the user in the database
         print("skipped")
         return
-
-    else:
+    except: # if the user doesnt exist we add them to the database
         stats = {
+            "_id": member.id,
             "name": member.display_name,
             "balance": 1000,
             "roulette": {
@@ -622,13 +641,8 @@ async def on_member_join(member):
             },
             "beg": 0
         }
-
-        data[str(member.id)] = stats
         
-        with open("bank.json", "w") as f:
-            json.dump(data, f, indent=1)
-
-load_dotenv("token.env")
+        InsertData(stats)
 
 # Get the token from environment variables
 token = os.getenv("DISCORD_TOKEN")
